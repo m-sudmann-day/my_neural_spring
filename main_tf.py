@@ -1,3 +1,5 @@
+# Author: Matthew Sudmann-Day
+
 from history import *
 from data_handler import *
 from model_tf import *
