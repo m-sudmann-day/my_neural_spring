@@ -145,17 +145,18 @@ class merge_layer(layer):
 
 class conv_layer(layer):
     
-    def __init__(self, name, input_layer, num_filters, filter_extent, trainable, guided_backprop, tensor_guided_backprop):
+    def __init__(self, name, input_layer, params, num_filters, filter_extent, trainable, guided_backprop, tensor_guided_backprop):
         super().__init__(name, input_layer)
+            
+        self.dropout_ratio = params.dropout_ratio_conv
+        self.input_layer = input_layer
+        self.num_input_channels = input_layer.num_output_channels
+        self.num_output_channels = num_filters
+        self.filter_extent = filter_extent
+        self.extent = input_layer.extent
+        self.weights_shape = (self.extent, self.extent, self. num_output_channels)
 
         with tf.name_scope(name):
-            
-            self.input_layer = input_layer
-            self.num_input_channels = input_layer.num_output_channels
-            self.num_output_channels = num_filters
-            self.filter_extent = filter_extent
-            self.extent = input_layer.extent
-            self.weights_shape = (self.extent, self.extent, self. num_output_channels)
             
             #self.weights = tf.Variable(tf.random_normal([filter_extent, filter_extent, self.num_input_channels, num_filters]), name="w", trainable=trainable)
             #self.biases = tf.Variable(tf.random_normal([num_filters]), name="b", trainable=trainable)
@@ -173,7 +174,10 @@ class conv_layer(layer):
             self.content_tf = self.conv + self.biases
             self.content_tf = batch_norm(self.content_tf, True, None)
             self.content_tf = self.my_relu(self.content_tf, guided_backprop, tensor_guided_backprop)
-            
+                        
+            if self.dropout_ratio > 0.0:
+                self.content_tf = tf.nn.dropout(self.content_tf, 1.0 - self.dropout_ratio)
+
         self.max_activations_per_output_channel = list()
         for i in range(self.num_output_channels):
             max_act_set = max_activation_set(self, 100)
@@ -268,9 +272,11 @@ class maxpool_layer(layer):
 
 class fc_layer(layer):
 
-    def __init__(self, name, input_layer, num_neurons, dropout, trainable, guided_backprop, tensor_guided_backprop):
+    def __init__(self, name, input_layer, params, num_neurons, trainable, guided_backprop, tensor_guided_backprop):
         super().__init__(name, input_layer)
             
+        self.dropout_ratio = params.dropout_ratio_fc
+
         with tf.name_scope(name):
             
             #TODO: wrap following line in a conditional checking if the input_layer is maxpool or conv
@@ -289,8 +295,8 @@ class fc_layer(layer):
             self.content_tf = batch_norm(self.content_tf, False, None)
             self.content_tf = self.my_relu(self.content_tf, guided_backprop, tensor_guided_backprop)
             
-            if dropout > 0:
-                self.content_tf = tf.nn.dropout(self.content_tf, 1. - dropout)
+            if self.dropout_ratio > 0.0:
+                self.content_tf = tf.nn.dropout(self.content_tf, 1.0 - self.dropout_ratio)
             
             self.num_neurons = num_neurons
             self.weights_shape = (self.num_neurons)

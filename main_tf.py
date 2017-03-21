@@ -4,7 +4,26 @@ from history import *
 from data_handler import *
 from model_tf import *
 from misc import *
+from params import *
 import inception
+
+params = msd_params()
+params.execution_mode = execution_mode.TRAINING
+params.data_source = data_source.CIFAR10
+params.train_ratio = 0.75
+params.activation_function = activation_function.RELU_TENSORFLOW_BUILTIN
+params.batch_normalization_method = batch_normalization_method.TENSORFLOW_BUILTIN
+params.batch_size = 128
+params.batch_type = batch_type.MINI
+params.dropout_ratio_conv = 0.5
+params.dropout_ratio_fc = 0.5
+params.learning_rate = 0.00005
+params.loss_function = loss_function.SOFTMAX_CROSS_ENTROPY
+params.max_inputs = 1024
+params.num_epochs = 100
+params.optimization_method = optimization_method.ADAM
+params.shuffle_data = True
+params.shuffle_data_seed = 12345
 
 visualization = False
 if visualization:
@@ -14,22 +33,19 @@ else:
     data_handler_params = {'train_ratio':0.8, 'max_images':None}
     model_params = {'num_epochs':10000, 'learning_rate':0.00005, 'dropout':0.25, 'batch_size':512, 'batch_type':'mini' } # mnist:0.000005
 
-with history() as hist:
+with history(params) as hist:
 
-    #hist.write_text_file("notes.txt", notes)
-    print("Data loader params:", data_handler_params)
-    print("Model params:", model_params)
     print_versions()
 
-    dh = data_handler(data_handler_params)
-    dh.load_data(data_handler_source.CIFAR10, shuffle=True, shuffle_seed=123)
+    dh = data_handler(params)
+    dh.load_data()
     #dh.merge_data(inception.get_activations('mixed_6/join'))
     dh.split_data()
 
     if visualization:
         
         # Create the model built on TensorFlow (False = not for visualization purposes).
-        model = model_tf(model_params, hist)
+        model = model_tf(params, hist)
         model.create_model(dh, False)
         
         # Reload a pretrained model and extract output activations for the entire dataset.
@@ -39,13 +55,13 @@ with history() as hist:
             
         # Recreate the model with different variables established as "training variables".
         # Also this results in a different activation function.
-        model = model_tf(model_params, hist)
+        model = model_tf(params, hist)
         model.create_model(dh, True)
         
         # Generate visuals using guided backpropagation for the first three images in the dataset.
         model.visuals_guided_backprop(dh, pretested_output_act, 3)
     else:
-        model = model_tf(model_params, hist)
+        model = model_tf(params, hist)
         model.create_model(dh, False)
         model.train_normal(dh)
 

@@ -8,20 +8,8 @@ from misc import *
 import cifar10
 import mnist
 import synth
-
+from params import *
 from PIL import Image
-
-
-class data_handler_source(Enum):
-    PIPES = 1
-    CIFAR10 = 2
-    MNIST = 3
-    SYNTH = 4
-
-class batch_type(Enum):
-    MINI = 1
-    SAMPLE_WITH_REPLACEMENT=2
-    SAMPLE_WITHOUT_REPLACEMENT=3
 
 BATCH_AXIS_IMAGE_INDEX = 0
 BATCH_AXIS_HEIGHT = 1
@@ -32,8 +20,11 @@ class data_handler():
 
     def __init__(self, params):
 
+        self.train_ratio = params.train_ratio
+        self.shuffle_data = params.shuffle_data
+        self.shuffle_data_seed = params.shuffle_data_seed
+        self.data_source = params.data_source
         self.params = params
-        self.train_ratio = self.params['train_ratio']
         self.Z_all = None
         self.Z_train = None
         self.Z_test = None
@@ -81,37 +72,35 @@ class data_handler():
 
         self.Z_all = new_data
         
-    def maybe_shuffle_and_maybe_truncate_data(self, shuffle, shuffle_seed):
+    def maybe_shuffle_and_maybe_truncate_data(self):
         
         nums = list(range(len(self.X_all)))
 
-        if shuffle:
-            if shuffle_seed is not None:
-                random.seed(shuffle_seed)
+        if self.shuffle_data:
+            if self.shuffle_data_seed is not None:
+                random.seed(self.shuffle_data_seed)
             random.shuffle(nums)
         
-        if self.params['max_images'] != None:
-            nums = nums[:self.params['max_images']]
+        if self.params.max_inputs != None:
+            nums = nums[:self.params.max_inputs]
             
         self.X_all = [self.X_all[i] for i in nums]
         self.y_all = [self.y_all[i] for i in nums]
         if self.files_all != None:
             self.files_all = [self.files_all[i] for i in nums]
         
-    def load_data(self, image_source, shuffle=True, shuffle_seed=None):
+    def load_data(self):
         
-        if image_source == data_handler_source.PIPES:
+        if self.data_source == data_source.PIPES:
             (self.X_all, self.y_all, self.files_all) = self.load_pipe_images()
-        elif image_source == data_handler_source.CIFAR10:
+        elif self.data_source == data_source.CIFAR10:
             (self.X_all, self.y_all, self.files_all) = self.load_cfar10_images()
-        elif image_source == data_handler_source.MNIST:
+        elif self.data_source == data_source.MNIST:
             (self.X_all, self.y_all, self.files_all) = self.load_mnist_images()
-        elif image_source == data_handler_source.SYNTH:
+        elif self.data_source == data_source.SYNTH:
             (self.X_all, self.y_all, self.files_all) = self.load_synth_images()
         
-        self.image_source = image_source
-        
-        self.maybe_shuffle_and_maybe_truncate_data(shuffle, shuffle_seed)
+        self.maybe_shuffle_and_maybe_truncate_data()
         
         self.X_all = self.prepare_inputs(self.X_all)
 

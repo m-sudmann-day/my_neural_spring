@@ -1,4 +1,5 @@
 from enum import Enum
+import copy as cp
 
 class data_source(Enum):
     PIPES = 1
@@ -57,8 +58,8 @@ class optimization_method(Enum):
 
 class msd_params:
 
-    data_source = None
     execution_mode = None
+    data_source = None
     dropout_ratio_conv = None
     dropout_ratio_fc = None
     train_ratio = None
@@ -73,3 +74,9 @@ class msd_params:
     regularization_penalty = None
     regularization_strength = None
     optimization_method = None
+    shuffle_data = None
+    shuffle_data_seed = None
+
+    def copy(self):
+        return cp.copy(self)
+        
