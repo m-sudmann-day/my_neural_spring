@@ -1,12 +1,10 @@
 import tensorflow as tf
+import layers as lyr
 from params import *
 
-def batch_norm(x, is_convolutional, params):
+def batch_norm(x, layer, params):
 
-    if params is None:
-        bn_method = batch_normalization_method.TENSORFLOW_BUILTIN
-    else:
-        bn_method = params.batch_normalization_method
+    bn_method = params.batch_normalization_method
 
     if bn_method == batch_normalization_method.NONE:
 
@@ -16,23 +14,25 @@ def batch_norm(x, is_convolutional, params):
 
         with tf.name_scope('bn'):
 
-            if is_convolutional:
+            if isinstance(layer, lyr.conv_layer):
                 axes = [0,1,2]
-            else:
+            elif isinstance(layer, lyr.fc_layer):
                 axes = [0]
+            else:
+                raise "batch_norm() does not support this layer type."
 
             gamma = tf.Variable(1.0, name='gamma', dtype=tf.float32)
             beta = tf.Variable(0.0, name='beta', dtype=tf.float32)
+            epsilon = 0.00001
 
             batch_mean, batch_var = tf.nn.moments(x, axes, name='moments')
 
-            return tf.nn.batch_normalization(x,batch_mean,batch_var,beta,gamma,0.0001, name='batch_norm')
+            return tf.nn.batch_normalization(x, batch_mean, batch_var, beta, gamma, 0.0001, name='batch_norm')
 
     elif bn_method == batch_normalization_method.TRAINABLE:
 
             running_mean = tf.Variable(0.0, name='running_mean')
             running_var = tf.Variable(0.0, name='running_var')
-
 
             # normalize: x2 = (x-mean)/sqrt(var)
             x2 = tf.divide(tf.subtract(x, batch_mean), tf.sqrt(batch_var))
@@ -41,3 +41,7 @@ def batch_norm(x, is_convolutional, params):
             result = tf.add(tf.mul(gamma, x2), beta)
 
             return(result)
+
+    else:
+
+        raise "Unsupported batch normalization method: " + bn_method

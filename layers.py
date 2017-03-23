@@ -38,7 +38,7 @@ class layer():
         self.name = name
         self.input_layer = input_layer
         
-    def my_relu(self, tensor, guided_backprop, tensor_guided_backprop):
+    def my_relu(self, tensor, guided_backprop):
 
         if (guided_backprop):
             with tf.get_default_graph().gradient_override_map({'Relu': 'GuidedRelu'}):
@@ -46,13 +46,6 @@ class layer():
         else:
             return tf.nn.relu(tensor, name="normal_relu")
         
-        def normal_relu(): return tf.nn.relu(tensor, name="normal_relu")
-        
-        with tf.get_default_graph().gradient_override_map({'Relu': 'GuidedRelu'}):
-            def guided_relu(): return tf.nn.relu(tensor, name="guided_relu")
-        
-        return(tf.cond(tensor_guided_backprop, guided_relu, normal_relu, name="relu"))
-
     def has_multiple_input_channels(self):
 
         if self.weights_shape is None: return False
@@ -145,9 +138,9 @@ class merge_layer(layer):
 
 class conv_layer(layer):
     
-    def __init__(self, name, input_layer, params, num_filters, filter_extent, trainable, guided_backprop, tensor_guided_backprop):
+    def __init__(self, name, input_layer, params, num_filters, filter_extent, trainable, guided_backprop):
         super().__init__(name, input_layer)
-            
+        
         self.dropout_ratio = params.dropout_ratio_conv
         self.input_layer = input_layer
         self.num_input_channels = input_layer.num_output_channels
@@ -158,10 +151,11 @@ class conv_layer(layer):
 
         with tf.name_scope(name):
             
-            #self.weights = tf.Variable(tf.random_normal([filter_extent, filter_extent, self.num_input_channels, num_filters]), name="w", trainable=trainable)
-            #self.biases = tf.Variable(tf.random_normal([num_filters]), name="b", trainable=trainable)
-            num_neurons_in = filter_extent * filter_extent * input_layer.num_output_channels
-            num_neurons_out = filter_extent * filter_extent * self.num_output_channels
+            input_layer_dropout_ratio = 0.0
+            if hasattr(input_layer, 'dropout_ratio'):
+                input_layer_dropout_ratio = input_layer.dropout_ratio
+            num_neurons_in = filter_extent * filter_extent * input_layer.num_output_channels * (1.0 - input_layer_dropout_ratio)
+            num_neurons_out = filter_extent * filter_extent * self.num_output_channels * (1.0 - self.dropout_ratio)
             stddev = math.sqrt(2.0 / (num_neurons_in + num_neurons_out))
             initial_weights = tf.truncated_normal([filter_extent, filter_extent, self.num_input_channels, num_filters], stddev=stddev)
             initial_biases = tf.fill([num_filters], 0.1)
@@ -172,8 +166,8 @@ class conv_layer(layer):
 
             self.conv = tf.nn.conv2d(input_layer.content_tf, self.weights, strides=[1, 1, 1, 1], padding='SAME')
             self.content_tf = self.conv + self.biases
-            self.content_tf = batch_norm(self.content_tf, True, None)
-            self.content_tf = self.my_relu(self.content_tf, guided_backprop, tensor_guided_backprop)
+            self.content_tf = batch_norm(self.content_tf, self, params)
+            self.content_tf = self.my_relu(self.content_tf, guided_backprop)
                         
             if self.dropout_ratio > 0.0:
                 self.content_tf = tf.nn.dropout(self.content_tf, 1.0 - self.dropout_ratio)
@@ -272,7 +266,7 @@ class maxpool_layer(layer):
 
 class fc_layer(layer):
 
-    def __init__(self, name, input_layer, params, num_neurons, trainable, guided_backprop, tensor_guided_backprop):
+    def __init__(self, name, input_layer, params, num_neurons, trainable, guided_backprop):
         super().__init__(name, input_layer)
             
         self.dropout_ratio = params.dropout_ratio_fc
@@ -282,9 +276,10 @@ class fc_layer(layer):
             #TODO: wrap following line in a conditional checking if the input_layer is maxpool or conv
             num_input_nodes = input_layer.extent * input_layer.extent * input_layer.num_output_channels
             
-            #self.weights = tf.Variable(tf.random_normal([num_input_nodes, num_neurons]), name="w", trainable=trainable)
-            #self.biases = tf.Variable(tf.random_normal([num_neurons]), name="b", trainable=trainable)
-            stddev = math.sqrt(2.0 / (num_input_nodes + num_neurons))
+            input_layer_dropout_ratio = 0.0
+            if hasattr(input_layer, 'dropout_ratio'):
+                input_layer_dropout_ratio = input_layer.dropout_ratio
+            stddev = math.sqrt(2.0 / (num_input_nodes * (1.0 - input_layer_dropout_ratio) + num_neurons * (1.0 - self.dropout_ratio)))
             initial_weights = tf.truncated_normal([num_input_nodes, num_neurons], stddev=stddev)
             initial_biases = tf.fill([num_neurons], 0.1)
             self.weights = tf.Variable(initial_weights, name="w", trainable=trainable)
@@ -292,8 +287,8 @@ class fc_layer(layer):
 
             self.content_tf = tf.reshape(input_layer.content_tf, [-1, num_input_nodes])
             self.content_tf = tf.matmul(self.content_tf, self.weights) + self.biases
-            self.content_tf = batch_norm(self.content_tf, False, None)
-            self.content_tf = self.my_relu(self.content_tf, guided_backprop, tensor_guided_backprop)
+            self.content_tf = batch_norm(self.content_tf, self, params)
+            self.content_tf = self.my_relu(self.content_tf, guided_backprop)
             
             if self.dropout_ratio > 0.0:
                 self.content_tf = tf.nn.dropout(self.content_tf, 1.0 - self.dropout_ratio)

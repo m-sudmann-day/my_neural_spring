@@ -67,42 +67,41 @@ class model_tf():
 
         tf.placeholder(tf.float32, [None, extent, extent, dh.num_image_channels], name='X')
         tf.placeholder(tf.float32, [None, self.num_classes], name='y')
-        self.tensor_use_guided_relu = tf.placeholder(tf.bool, None, name='use_guided_relu')
 
         input = self.add_layer(lyr.image_layer("image", self.get_tensor_X(), not self.trainable))
 
         if dh.data_source == data_source.MNIST:
 
             with tf.name_scope("convset1"):
-                conv1a = self.add_layer(lyr.conv_layer("conv1a", self.last_layer, self.params, 16, 7, self.trainable, guided_backprop, self.tensor_use_guided_relu))
-                conv1b = self.add_layer(lyr.conv_layer("conv1b", self.last_layer, self.params, 16, 7, self.trainable, guided_backprop, self.tensor_use_guided_relu))
+                conv1a = self.add_layer(lyr.conv_layer("conv1a", self.last_layer, self.params, 16, 7, self.trainable, guided_backprop))
+                conv1b = self.add_layer(lyr.conv_layer("conv1b", self.last_layer, self.params, 16, 7, self.trainable, guided_backprop))
             
             with tf.name_scope("convset2"):
-                conv2a = self.add_layer(lyr.conv_layer("conv2a", self.last_layer, self.params, 16, 5, self.trainable, guided_backprop, self.tensor_use_guided_relu))
-                conv2b = self.add_layer(lyr.conv_layer("conv2b", self.last_layer, self.params, 16, 3, self.trainable, guided_backprop, self.tensor_use_guided_relu))
+                conv2a = self.add_layer(lyr.conv_layer("conv2a", self.last_layer, self.params, 16, 5, self.trainable, guided_backprop))
+                conv2b = self.add_layer(lyr.conv_layer("conv2b", self.last_layer, self.params, 16, 3, self.trainable, guided_backprop))
                 pool2 = self.add_layer(lyr.maxpool_layer("pool2", self.last_layer, 2))
                    
             with tf.name_scope("convset3"):
-                conv3a = self.add_layer(lyr.conv_layer("conv3a", self.last_layer, self.params, 16, 3, self.trainable, guided_backprop, self.tensor_use_guided_relu))
-                conv3b = self.add_layer(lyr.conv_layer("conv3b", self.last_layer, self.params, 16, 3, self.trainable, guided_backprop, self.tensor_use_guided_relu))
+                conv3a = self.add_layer(lyr.conv_layer("conv3a", self.last_layer, self.params, 16, 3, self.trainable, guided_backprop))
+                conv3b = self.add_layer(lyr.conv_layer("conv3b", self.last_layer, self.params, 16, 3, self.trainable, guided_backprop))
 
-            fc1 = self.add_layer(lyr.fc_layer("fc1", self.last_layer, self.params, 128, self.trainable, guided_backprop, self.tensor_use_guided_relu))
+            fc1 = self.add_layer(lyr.fc_layer("fc1", self.last_layer, self.params, 128, self.trainable, guided_backprop))
 
         elif dh.data_source == data_source.CIFAR10:
 
             with tf.name_scope("convset1"):
-                conv1a = self.add_layer(lyr.conv_layer("conv1a", self.last_layer, self.params, 64, 7, self.trainable, guided_backprop, self.tensor_use_guided_relu))
-                conv1b = self.add_layer(lyr.conv_layer("conv1b", self.last_layer, self.params, 64, 7, self.trainable, guided_backprop, self.tensor_use_guided_relu))
+                conv1a = self.add_layer(lyr.conv_layer("conv1a", self.last_layer, self.params, 64, 7, self.trainable, guided_backprop))
+                conv1b = self.add_layer(lyr.conv_layer("conv1b", self.last_layer, self.params, 64, 7, self.trainable, guided_backprop))
                 pool1 = self.add_layer(lyr.maxpool_layer("pool1", self.last_layer, 2))
             
             with tf.name_scope("convset2"):
-                conv2a = self.add_layer(lyr.conv_layer("conv2a", self.last_layer, self.params, 96, 5, self.trainable, guided_backprop, self.tensor_use_guided_relu))
-                conv2b = self.add_layer(lyr.conv_layer("conv2b", self.last_layer, self.params, 96, 3, self.trainable, guided_backprop, self.tensor_use_guided_relu))
+                conv2a = self.add_layer(lyr.conv_layer("conv2a", self.last_layer, self.params, 96, 5, self.trainable, guided_backprop))
+                conv2b = self.add_layer(lyr.conv_layer("conv2b", self.last_layer, self.params, 96, 3, self.trainable, guided_backprop))
                 pool2 = self.add_layer(lyr.maxpool_layer("pool2", self.last_layer, 2))
                    
             with tf.name_scope("convset3"):
-                conv3a = self.add_layer(lyr.conv_layer("conv3a", self.last_layer, self.params, 64, 3, self.trainable, guided_backprop, self.tensor_use_guided_relu))
-                conv3b = self.add_layer(lyr.conv_layer("conv3b", self.last_layer, self.params, 64, 3, self.trainable, guided_backprop, self.tensor_use_guided_relu))
+                conv3a = self.add_layer(lyr.conv_layer("conv3a", self.last_layer, self.params, 64, 3, self.trainable, guided_backprop))
+                conv3b = self.add_layer(lyr.conv_layer("conv3b", self.last_layer, self.params, 64, 3, self.trainable, guided_backprop))
                 pool3 = self.add_layer(lyr.maxpool_layer("pool3", self.last_layer, 2))
 
     # 
@@ -115,7 +114,7 @@ class model_tf():
     #             conv7 = self.add_layer(lyr.conv_layer("conv7", self.last_layer, 128, 5))
     #             conv8 = self.add_layer(lyr.conv_layer("conv8", self.last_layer, 128, 5))
     
-                fc1 = self.add_layer(lyr.fc_layer("fc1", self.last_layer, self.params, 256, self.trainable, guided_backprop, self.tensor_use_guided_relu))
+                fc1 = self.add_layer(lyr.fc_layer("fc1", self.last_layer, self.params, 256, self.trainable, guided_backprop))
     
         output = self.add_layer(lyr.output_layer("output", self.last_layer, dh.num_classes, self.trainable))
         
@@ -512,9 +511,7 @@ class model_tf():
         
         if self.get_tensor_Z() is not None:
             feed_dict[self.get_tensor_Z()] = batch_Z
-            
-        feed_dict[self.tensor_use_guided_relu] = use_guided_relu
-            
+
         return (feed_dict, batch_offset)
 
 #     def visuals(self, sess, dh):

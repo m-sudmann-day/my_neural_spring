@@ -9,29 +9,23 @@ import inception
 
 params = msd_params()
 params.execution_mode = execution_mode.TRAINING
-params.data_source = data_source.CIFAR10
+params.data_source = data_source.MNIST
 params.train_ratio = 0.75
 params.activation_function = activation_function.RELU_TENSORFLOW_BUILTIN
 params.batch_normalization_method = batch_normalization_method.TENSORFLOW_BUILTIN
 params.batch_size = 128
 params.batch_type = batch_type.MINI
-params.dropout_ratio_conv = 0.5
-params.dropout_ratio_fc = 0.5
+params.dropout_ratio_conv = 0.25
+params.dropout_ratio_fc = 0.25
 params.learning_rate = 0.00005
 params.loss_function = loss_function.SOFTMAX_CROSS_ENTROPY
-params.max_inputs = 1024
+params.max_inputs = 2048
 params.num_epochs = 100
 params.optimization_method = optimization_method.ADAM
 params.shuffle_data = True
 params.shuffle_data_seed = 12345
 
 visualization = False
-if visualization:
-    data_handler_params = {'train_ratio':0.75, 'max_images':40}
-    model_params = {'num_epochs':100, 'learning_rate':0.0005, 'dropout':0, 'batch_size':1, 'batch_type':'mini' } # high LR = 0.0005
-else:
-    data_handler_params = {'train_ratio':0.8, 'max_images':None}
-    model_params = {'num_epochs':10000, 'learning_rate':0.00005, 'dropout':0.25, 'batch_size':512, 'batch_type':'mini' } # mnist:0.000005
 
 with history(params) as hist:
 

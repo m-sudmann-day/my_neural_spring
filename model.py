@@ -2,7 +2,6 @@ import sys
 import platform
 import numpy as np
 import math
-import keras
 import tensorflow as tf
 import cv2
 import os
@@ -14,11 +13,6 @@ import shutil
 import matplotlib
 matplotlib.use('Agg')
 import pylab as pl
-
-from keras.utils import np_utils
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, Flatten, BatchNormalization
-from keras.layers.convolutional import Convolution2D, MaxPooling2D
 
 class model:
 
@@ -245,8 +239,8 @@ class model:
                     else:
                         shutil.copy(image, false_neg_path)
 
-    def load_model(self, path):
-        with open(path, 'r') as json_file:
-            json = json_file.read()
-        self.model = keras.models.model_from_json(json)
-        self.model.compile(loss='mse', optimizer='nadam', metrics=['accuracy'])
+#    def load_model(self, path):
+#        with open(path, 'r') as json_file:
+#            json = json_file.read()
+#        self.model = keras.models.model_from_json(json)
+#        self.model.compile(loss='mse', optimizer='nadam', metrics=['accuracy'])

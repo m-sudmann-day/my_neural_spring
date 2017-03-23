@@ -24,6 +24,14 @@ class batch_normalization_method(Enum):
     TENSORFLOW_BUILTIN = 2
     TRAINABLE = 3
 
+class batch_normalization_timing(Enum):
+    NONE = 1
+    BEFORE_NONLINEARITY = 2 # typical
+    AFTER_NONLINEARITY = 3 # I read that this is better when dropout is used.  Need to test it.
+
+# See https://openreview.net/pdf?id=r1BJLw9ex
+# TODO Do I need to adjust weight initialization to compensate for dropped out neurons?
+
 class weight_initialization_method(Enum):
     RANDOM_NORMAL = 1
     HE_ET_AL = 2

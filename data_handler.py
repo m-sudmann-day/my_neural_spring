@@ -5,9 +5,6 @@ import random
 import math
 from glob import glob
 from misc import *
-import cifar10
-import mnist
-import synth
 from params import *
 from PIL import Image
 
@@ -30,7 +27,9 @@ class data_handler():
         self.Z_test = None
 
     def load_cfar10_images(self):
-    
+
+        import cifar10
+
         (images, cls) = cifar10.load_data()
 
         #for x in range(0,60000,5000):
@@ -42,7 +41,9 @@ class data_handler():
         return (images, cls, None)
     
     def load_mnist_images(self):
-        
+
+        import mnist
+
         (images, cls) = mnist.load_data()
         return (images, cls, None)
     
@@ -65,6 +66,8 @@ class data_handler():
         return (images, labels, files)
     
     def load_synth_images(self):
+
+        import synth    
 
         return(synth.load_images())
 
