@@ -40,6 +40,10 @@ class bias_initialization_method(Enum):
     RANDOM_NORMAL = 1
     SMALL_NUMBER = 2
 
+class pooling_method(Enum):
+    MAX = 1
+    MEAN = 2
+
 class activation_function(Enum):
     RELU = 1
     RELU_TENSORFLOW_BUILTIN = 2

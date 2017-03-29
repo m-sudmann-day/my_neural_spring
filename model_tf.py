@@ -11,6 +11,7 @@ import matplotlib; matplotlib.use('Agg')
 import pylab as pl
 import time
 import layers as lyr
+import layerx as lyrx
 from misc import *
 from data_handler import *
 from scipy.misc import imsave
@@ -35,6 +36,8 @@ class model_tf():
         
         self.layers = dict()
         self.layers_as_list = list()
+        self.layersx = dict()
+        self.layersx_as_list = list()
         self.batch_type = batch_type.MINI
         self.using_restored_weights = False
 
@@ -50,6 +53,14 @@ class model_tf():
         self.layers[layer.name] = layer
         self.layers_as_list.append(layer)
         self.last_layer = layer
+        
+        return layer
+            
+    def add_layerx(self, layer):
+
+        self.layersx[layer.name] = layer
+        self.layersx_as_list.append(layer)
+        self.last_layerx = layer
         
         return layer
     
@@ -69,23 +80,32 @@ class model_tf():
         tf.placeholder(tf.float32, [None, self.num_classes], name='y')
 
         input = self.add_layer(lyr.image_layer("image", self.get_tensor_X(), not self.trainable))
+        self.add_layerx(lyrx.image_input_layerx("imagex", self.params, self.get_tensor_X()))
 
         if dh.data_source == data_source.MNIST:
 
             with tf.name_scope("convset1"):
                 conv1a = self.add_layer(lyr.conv_layer("conv1a", self.last_layer, self.params, 16, 7, self.trainable, guided_backprop))
+                self.add_layerx(lyrx.image_conv_layerx("conv1a", self.params, self.last_layerx, 16, 7))
                 conv1b = self.add_layer(lyr.conv_layer("conv1b", self.last_layer, self.params, 16, 7, self.trainable, guided_backprop))
+                self.add_layerx(lyrx.image_conv_layerx("conv1b", self.params, self.last_layerx, 16, 7))
             
             with tf.name_scope("convset2"):
                 conv2a = self.add_layer(lyr.conv_layer("conv2a", self.last_layer, self.params, 16, 5, self.trainable, guided_backprop))
+                self.add_layerx(lyrx.image_conv_layerx("conv2a", self.params, self.last_layerx, 16, 5))
                 conv2b = self.add_layer(lyr.conv_layer("conv2b", self.last_layer, self.params, 16, 3, self.trainable, guided_backprop))
+                self.add_layerx(lyrx.image_conv_layerx("conv2b", self.params, self.last_layerx, 16, 3))
                 pool2 = self.add_layer(lyr.maxpool_layer("pool2", self.last_layer, 2))
+                self.add_layerx(lyrx.image_pool_layerx("pool2", self.params, self.last_layerx, 2))
                    
             with tf.name_scope("convset3"):
                 conv3a = self.add_layer(lyr.conv_layer("conv3a", self.last_layer, self.params, 16, 3, self.trainable, guided_backprop))
+                self.add_layerx(lyrx.image_conv_layerx("conv3a", self.params, self.last_layerx, 16, 3))
                 conv3b = self.add_layer(lyr.conv_layer("conv3b", self.last_layer, self.params, 16, 3, self.trainable, guided_backprop))
+                self.add_layerx(lyrx.image_conv_layerx("conv3b", self.params, self.last_layerx, 16, 3))
 
             fc1 = self.add_layer(lyr.fc_layer("fc1", self.last_layer, self.params, 128, self.trainable, guided_backprop))
+            self.add_layerx(lyrx.fc_layerx("fc1", self.params, self.last_layerx, 128))
 
         elif dh.data_source == data_source.CIFAR10:
 
@@ -122,6 +142,8 @@ class model_tf():
         for layer in self.layers_as_list:
             print(layer.get_summary())
         print("-------------------------")
+        for layerx in self.layersx_as_list:
+            print(layerx.get_summary())
         
         # Define loss and optimizer
         with tf.name_scope('softmax_'):
@@ -397,7 +419,7 @@ class model_tf():
             layer_tensors = [layer.content_tf for layer in self.layers_as_list]
             weight_tensors = [layer.weights for layer in self.layers_as_list if layer.weights is not None]
             #names_of_layers_with_weights = [layer.name for layer in self.layers_as_list if layer.weights is not None]
-             
+            
             #TODO: remove weight tensors?
             tensor_values = sess.run(layer_tensors + weight_tensors, feed_dict=feed_dict)
             conv_tensors = tensor_values[:len(layer_tensors)]

@@ -163,9 +163,8 @@ class conv_layer(layer):
             self.weights = tf.Variable(initial_weights, name="w", trainable=trainable)
             self.biases = tf.Variable(initial_biases, name="b", trainable=trainable)
 
-
-            self.conv = tf.nn.conv2d(input_layer.content_tf, self.weights, strides=[1, 1, 1, 1], padding='SAME')
-            self.content_tf = self.conv + self.biases
+            self.content_tf = tf.nn.conv2d(input_layer.content_tf, self.weights, strides=[1, 1, 1, 1], padding='SAME')
+            self.content_tf = self.content_tf + self.biases
             self.content_tf = batch_norm(self.content_tf, self, params)
             self.content_tf = self.my_relu(self.content_tf, guided_backprop)
                         
