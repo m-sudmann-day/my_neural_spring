@@ -206,9 +206,6 @@ class model_tf():
 
     def train_normal(self, dh):
         assert self.g is tf.get_default_graph()
-        # Launch the graph
-        #with tf.device('/gpu:0'):
-        cluster = tf.train.ClusterSpec({"local": ["localhost:2222", "localhost:2223"]})
 
         with tf.Session() as sess:
     
@@ -251,6 +248,8 @@ class model_tf():
 
                     dh.start_epoch(self.batch_type, self.batch_size)
                     collected_new_gradients = None
+                    batches_in_current_super_batch = 0
+
                     while not dh.is_epoch_finished():
                         
                         (feed_dict, batch_offset) = self.get_next_batch_as_feed_dict(dh, False)
@@ -266,13 +265,14 @@ class model_tf():
                         else:
                             for i, new_gradient in iter(new_gradients):
                                 collected_new_gradients[i] = np.add(collected_new_gradients[i], new_gradient)
+                        batches_in_current_super_batch += 1
 
-                        #collected_new_gradients = collected_new_gradients / 4
-
-                        if (batch_offset % 4 == 0):
-                            feed_dict2 = dict(zip(placeholders, collected_new_gradients))
-                            sess.run(apply_gradients, feed_dict=feed_dict2)
+                        if (batch_offset % self.params.batches_per_super_batch == 0):
+                            collected_new_gradients = [x / float(batches_in_current_super_batch) for x in collected_new_gradients]
+                            gradient_feed_dict = dict(zip(placeholders, collected_new_gradients))
+                            sess.run(apply_gradients, feed_dict=gradient_feed_dict)
                             collected_new_gradients = None
+                            batches_in_current_super_batch = 0
 
                     if summary_output is not None:
                         summary_writer.add_summary(summary_output, self.num_remaining_epochs)

@@ -88,6 +88,7 @@ class msd_params:
     optimization_method = None
     shuffle_data = None
     shuffle_data_seed = None
+    batches_per_super_batch = None
 
     def copy(self):
         return cp.copy(self)
