@@ -221,8 +221,20 @@ class model_tf():
             summary_output = None
 
             optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate, name='optimizer')
-            objective = optimizer.minimize(self.get_tensor_cost())
+            gradients_and_vars = optimizer.compute_gradients(self.get_tensor_cost())
+            gradients = [g for (g, v) in gradients_and_vars]
+            variables_for_gradients = [v for (g, v) in gradients_and_vars]
 
+            placeholders = []
+            for (i, g) in enumerate(gradients):
+                ph = tf.placeholder(dtype=tf.float32, shape=g.get_shape(), name='g' + str(i))
+                placeholders.append(ph)
+
+            new_grads_and_vars = zip(placeholders, variables_for_gradients)
+
+            apply_gradients = optimizer.apply_gradients(new_grads_and_vars)
+
+            # though not called directly, this seems to be needed in order to initialize at least one variable created by the optimizer
             self.load_or_init_variables(sess, dh)
 
             self.tf_vars = self.get_variable_values(sess)
@@ -238,14 +250,29 @@ class model_tf():
                     self.set_variable_values(sess, self.tf_vars)
 
                     dh.start_epoch(self.batch_type, self.batch_size)
+                    collected_new_gradients = None
                     while not dh.is_epoch_finished():
-                    
-                        (feed_dict, batch_offset) = self.get_next_batch_as_feed_dict(dh, False)
                         
+                        (feed_dict, batch_offset) = self.get_next_batch_as_feed_dict(dh, False)
+
                         if summary_node is None:
-                            _ = sess.run(objective, feed_dict=feed_dict)
+                            new_gradients_and_vars = sess.run(gradients_and_vars, feed_dict=feed_dict)
                         else:
-                            (_, summary_output) = sess.run([objective, summary_node], feed_dict=feed_dict)
+                            (new_gradients_and_vars, summary_output) = sess.run([gradients_and_vars, summary_node], feed_dict=feed_dict)
+
+                        new_gradients = [g for (g,v) in new_gradients_and_vars]
+                        if collected_new_gradients is None:
+                            collected_new_gradients = new_gradients
+                        else:
+                            for i, new_gradient in iter(new_gradients):
+                                collected_new_gradients[i] = np.add(collected_new_gradients[i], new_gradient)
+
+                        #collected_new_gradients = collected_new_gradients / 4
+
+                        if (batch_offset % 4 == 0):
+                            feed_dict2 = dict(zip(placeholders, collected_new_gradients))
+                            sess.run(apply_gradients, feed_dict=feed_dict2)
+                            collected_new_gradients = None
 
                     if summary_output is not None:
                         summary_writer.add_summary(summary_output, self.num_remaining_epochs)
@@ -279,20 +306,13 @@ class model_tf():
 
                 self.num_completed_epochs += 1
                 self.num_remaining_epochs -= 1
-#                 if self.num_remaining_epochs == 0:
-#                     answer = ""
-#                     while not contains_int(answer):
-#                         answer = input('How many more epochs do you want to run: ')
-#                     self.num_remaining_epochs = int(answer)
 
         self.write_training_log(log)
-    
-#             self.result_test, preds = sess.run([self.get_tensor_accuracy(), self.layers['output'].content_tf],
-#                                                feed_dict={self.get_tensor_X(): dh.X_test, self.get_tensor_y(): dh.y_test})
-#             self.result_test = val_acc
-        
-        #self.handle_predictions(preds, dh)
 
+        #self.result_test, preds = sess.run([self.get_tensor_accuracy(), self.layers['output'].content_tf],
+        #                                   feed_dict={self.get_tensor_X(): dh.X_test, self.get_tensor_y(): dh.y_test})
+        #self.result_test = val_acc
+        #self.handle_predictions(preds, dh)
         #print("Train accuracy: {0:.2f}".format(self.result_train * 100))
         #print("Test accuracy: {0:.2f}".format(self.result_test * 100))
         
